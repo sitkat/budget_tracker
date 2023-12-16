@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 import '../data/onboard_model.dart';
 import '../theme/app_colors.dart';
@@ -103,12 +104,7 @@ class _OnBoardState extends State<OnBoard> {
                       InkWell(
                         onTap: () async {
                           if (index == screens.length - 1) {
-                            _openAppReview();
-                            await _storeOnBoardInfo();
-                            Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const NavigationScreen()));
+                            await _showReviewDialog(context);
                           }
                           _pageController.nextPage(
                               duration: const Duration(microseconds: 300),
@@ -147,10 +143,79 @@ class _OnBoardState extends State<OnBoard> {
     );
   }
 
-  void _openAppReview() async {
-    // final InAppReview inAppReview = InAppReview.instance;
-    // if (await inAppReview.isAvailable()){
-    //
-    // }
+  _showReviewDialog(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        double rating = 0;
+
+        return Center(
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 300,
+            ),
+            child: AlertDialog(
+              title: const Text('Vous appréciez lapplication?'),
+              content: Column(
+                children: [
+                  const Text('Souhaitez-vous laisser un commentaire?'),
+                  const SizedBox(height: 10),
+                  RatingBar.builder(
+                    initialRating: rating,
+                    minRating: 1,
+                    direction: Axis.horizontal,
+                    allowHalfRating: false,
+                    itemCount: 5,
+                    itemSize: 40,
+                    itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    itemBuilder: (context, _) => const Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                    ),
+                    onRatingUpdate: (value) {
+                      rating = value;
+                    },
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () async {
+                    await _storeOnBoardInfo();
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NavigationScreen()));
+                  },
+                  child: const Text('Non'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await _storeOnBoardInfo();
+                    saveUserChoice(true);
+                    saveUserRating(rating);
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NavigationScreen()));
+                  },
+                  child: const Text('Oui'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void saveUserChoice(bool userWantsToReview) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('userWantsToReview', userWantsToReview);
+  }
+
+  void saveUserRating(double rating) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setDouble('userRating', rating);
   }
 }

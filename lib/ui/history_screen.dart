@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/data_base_helper.dart';
 import '../theme/app_colors.dart';
@@ -70,7 +72,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       appBar: CustomAppBar(context, 'Histoire'),
       body: Column(
-        children: [
+          children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: Column(
@@ -81,10 +83,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   icon: Icons.arrow_forward_ios,
                   iconColor: Theme.of(context).primaryColor,
                   textColor: AppColors.grey,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                  child: _buildCategoryIndicator(),
                 ),
                 const SizedBox(height: 15),
                 _buildTwoContainers(
@@ -152,6 +150,67 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  void _showReviewDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        double rating = 0;
+
+        return AlertDialog(
+          title: Text('Enjoying the App?'),
+          content: Column(
+            children: [
+              Text('Would you like to leave a review?'),
+              SizedBox(height: 10),
+              RatingBar.builder(
+                initialRating: rating,
+                minRating: 1,
+                direction: Axis.horizontal,
+                allowHalfRating: false,
+                itemCount: 5,
+                itemSize: 40,
+                itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                itemBuilder: (context, _) => Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                ),
+                onRatingUpdate: (value) {
+                  rating = value;
+                },
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                saveUserChoice(true);
+                saveUserRating(rating);
+                Navigator.of(context).pop();
+              },
+              child: Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void saveUserChoice(bool userWantsToReview) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('userWantsToReview', userWantsToReview);
+  }
+
+  void saveUserRating(double rating) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setDouble('userRating', rating);
+  }
+
   Widget _buildCategoryIndicator() {
     final categoryColors = {
       'Food': const Color(0xffF18255),
@@ -161,7 +220,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       'Entertainment': const Color(0xffB069DB),
       'Other': const Color(0xff69D4DB),
     };
-
     return Container(
       height: 12.0,
       decoration: BoxDecoration(
@@ -283,6 +341,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 15),
+          _buildCategoryIndicator(),
+          const SizedBox(height: 15),
         ],
       ),
     );
